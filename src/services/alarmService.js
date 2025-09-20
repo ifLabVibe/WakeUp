@@ -74,9 +74,8 @@ export class AlarmService {
       console.log('闹钟触发!', alarm.time);
       this.isAlarmActive = false;
 
-      // 这里暂时只是日志输出，后续阶段会添加音效播放
-      console.log('🔔 闹钟响起！');
-      console.log('📱 请打开应用并摇晃手机关闭闹钟');
+      // 播放闹钟音效
+      await this.playAlarmSound();
 
       // 记录触发时间到统计数据
       const today = new Date().toISOString().split('T')[0];
@@ -95,14 +94,110 @@ export class AlarmService {
         await StorageService.saveStats(stats);
       }
 
-      // 后续阶段将在这里添加:
-      // 1. 播放闹钟音效
-      // 2. 发送通知
-      // 3. 跳转到触发页面
+      // 导航到触发页面
+      if (this.navigationRef && this.navigationRef.current) {
+        this.navigationRef.current.navigate('Trigger', {
+          alarmId: alarm.id,
+          triggerType: alarm.triggerType || 'shake',
+          difficulty: alarm.difficulty || 'normal'
+        });
+      }
+
+      console.log('🔔 闹钟响起！请完成指定动作关闭闹钟');
 
     } catch (error) {
       console.error('触发闹钟失败:', error);
     }
+  }
+
+  /**
+   * 播放闹钟音效
+   */
+  static async playAlarmSound() {
+    try {
+      if (this.alarmSound) {
+        // 停止之前的音效
+        await this.alarmSound.unloadAsync();
+      }
+
+      // 加载并播放音效
+      const { Audio } = await import('expo-av');
+
+      // 设置音频模式
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        staysActiveInBackground: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      // 加载默认闹钟音效
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/alarm.mp3'),
+        {
+          shouldPlay: true,
+          isLooping: true,
+          volume: 1.0
+        }
+      );
+
+      this.alarmSound = sound;
+      console.log('闹钟音效播放中...');
+
+    } catch (error) {
+      console.error('播放闹钟音效失败:', error);
+      // 如果音效播放失败，使用震动作为备选
+      await this.fallbackVibration();
+    }
+  }
+
+  /**
+   * 备选震动提醒
+   */
+  static async fallbackVibration() {
+    try {
+      const { Vibration } = await import('react-native');
+
+      // 持续震动模式：震动1秒，停止0.5秒，重复
+      const pattern = [1000, 500];
+      Vibration.vibrate(pattern, true);
+
+      console.log('使用震动作为闹钟提醒');
+
+    } catch (error) {
+      console.error('震动失败:', error);
+    }
+  }
+
+  /**
+   * 停止闹钟音效和震动
+   */
+  static async stopAlarmSound() {
+    try {
+      // 停止音效
+      if (this.alarmSound) {
+        await this.alarmSound.unloadAsync();
+        this.alarmSound = null;
+      }
+
+      // 停止震动
+      const { Vibration } = await import('react-native');
+      Vibration.cancel();
+
+      console.log('闹钟音效已停止');
+
+    } catch (error) {
+      console.error('停止闹钟音效失败:', error);
+    }
+  }
+
+  /**
+   * 设置导航引用（用于跳转到触发页面）
+   * @param {Object} navigationRef - React Navigation的ref
+   */
+  static setNavigationRef(navigationRef) {
+    this.navigationRef = navigationRef;
   }
 
   /**
@@ -270,8 +365,13 @@ export class AlarmService {
    */
   static async completeAlarm(alarmId) {
     try {
+      // 停止闹钟音效
+      await this.stopAlarmSound();
+
+      // 记录成功关闭
       await StorageService.recordWakeUpSuccess(alarmId);
       await this.cancelAlarm();
+
       console.log('闹钟成功关闭，起床成功！');
     } catch (error) {
       console.error('完成闹钟失败:', error);

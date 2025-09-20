@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
@@ -9,11 +9,24 @@ import SetAlarmScreen from './src/screens/SetAlarmScreen';
 import TriggerScreen from './src/screens/TriggerScreen';
 import StatsScreen from './src/screens/StatsScreen';
 
+// 导入服务
+import { AlarmService } from './src/services/alarmService';
+
 const Stack = createStackNavigator();
 
 export default function App() {
+  const navigationRef = useRef();
+
+  useEffect(() => {
+    // 设置导航引用，用于闹钟触发时自动跳转
+    AlarmService.setNavigationRef(navigationRef);
+
+    // 恢复闹钟调度（应用重启时）
+    AlarmService.restoreAlarmSchedule();
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <StatusBar style="light" backgroundColor="#000000" />
       <Stack.Navigator
         initialRouteName="Home"
