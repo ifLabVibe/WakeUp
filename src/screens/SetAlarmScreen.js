@@ -1,101 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ScrollView, Switch } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
-import TimePicker from '../components/TimePicker';
-import { AlarmService } from '../services/alarmService';
-import { StorageService } from '../services/storageService';
-import { getCurrentTime } from '../utils/timeUtils';
 
 export default function SetAlarmScreen({ navigation }) {
-  const [selectedTime, setSelectedTime] = useState(getCurrentTime());
-  const [alarmLabel, setAlarmLabel] = useState('起床闹钟');
+  const [selectedHour, setSelectedHour] = useState(7);
+  const [selectedMinute, setSelectedMinute] = useState(0);
   const [triggerType, setTriggerType] = useState('shake');
   const [difficulty, setDifficulty] = useState('normal');
-  const [loading, setLoading] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [existingAlarm, setExistingAlarm] = useState(null);
 
-  useEffect(() => {
-    loadExistingAlarm();
-  }, []);
-
-  const loadExistingAlarm = async () => {
-    try {
-      const alarm = await StorageService.getAlarm();
-      if (alarm) {
-        setIsEditMode(true);
-        setExistingAlarm(alarm);
-        setSelectedTime(alarm.time);
-        setAlarmLabel(alarm.label || '起床闹钟');
-        setTriggerType(alarm.triggerType || 'shake');
-        setDifficulty(alarm.difficulty || 'normal');
-      }
-    } catch (error) {
-      console.error('加载现有闹钟失败:', error);
-    }
+  const formatTime = (hour, minute) => {
+    const h = hour.toString().padStart(2, '0');
+    const m = minute.toString().padStart(2, '0');
+    return `${h}:${m}`;
   };
 
-  const handleSaveAlarm = async () => {
-    try {
-      setLoading(true);
+  const handleSaveAlarm = () => {
+    const alarmTime = formatTime(selectedHour, selectedMinute);
 
-      if (isEditMode) {
-        // 更新现有闹钟
-        const updatedAlarm = await AlarmService.updateAlarmTime(selectedTime);
-        await StorageService.updateAlarm({
-          label: alarmLabel,
-          triggerType,
-          difficulty
-        });
-
-        Alert.alert('成功', '闹钟已更新', [
-          { text: '确定', onPress: () => navigation.goBack() }
-        ]);
-      } else {
-        // 创建新闹钟
-        const alarm = await AlarmService.createAlarm(selectedTime, {
-          label: alarmLabel,
-          triggerType,
-          difficulty
-        });
-
-        Alert.alert('成功', `闹钟已设置为 ${selectedTime}`, [
-          { text: '确定', onPress: () => navigation.goBack() }
-        ]);
-      }
-    } catch (error) {
-      console.error('保存闹钟失败:', error);
-      Alert.alert('错误', '保存闹钟失败，请重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteAlarm = async () => {
     Alert.alert(
-      '确认删除',
-      '确定要删除这个闹钟吗？',
+      '成功',
+      `闹钟已设置为 ${alarmTime}\n触发方式: ${triggerType === 'shake' ? '摇晃关闭' : '距离关闭'}\n难度: ${difficulty === 'easy' ? '简单' : difficulty === 'normal' ? '普通' : '困难'}`,
       [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '删除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AlarmService.cancelAlarm();
-              await StorageService.removeAlarm();
-              Alert.alert('成功', '闹钟已删除', [
-                { text: '确定', onPress: () => navigation.goBack() }
-              ]);
-            } catch (error) {
-              Alert.alert('错误', '删除闹钟失败');
-            }
-          }
-        }
+        { text: '确定', onPress: () => navigation.goBack() }
       ]
     );
   };
+
+  const renderTimePicker = () => (
+    <View style={styles.timePickerCard}>
+      <Text style={styles.sectionTitle}>设置时间</Text>
+      <View style={styles.timeContainer}>
+        <View style={styles.timeDisplay}>
+          <Text style={styles.timeText}>{formatTime(selectedHour, selectedMinute)}</Text>
+        </View>
+
+        <View style={styles.timeControls}>
+          <View style={styles.timeControl}>
+            <Text style={styles.timeLabel}>小时</Text>
+            <View style={styles.controlButtons}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => setSelectedHour(prev => prev > 0 ? prev - 1 : 23)}
+              >
+                <Text style={styles.controlButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.controlValue}>{selectedHour.toString().padStart(2, '0')}</Text>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => setSelectedHour(prev => prev < 23 ? prev + 1 : 0)}
+              >
+                <Text style={styles.controlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.timeControl}>
+            <Text style={styles.timeLabel}>分钟</Text>
+            <View style={styles.controlButtons}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => setSelectedMinute(prev => prev > 0 ? prev - 5 : 55)}
+              >
+                <Text style={styles.controlButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.controlValue}>{selectedMinute.toString().padStart(2, '0')}</Text>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => setSelectedMinute(prev => prev < 55 ? prev + 5 : 0)}
+              >
+                <Text style={styles.controlButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 
   const renderTriggerTypeSelector = () => (
     <View style={styles.sectionCard}>
@@ -105,23 +86,15 @@ export default function SetAlarmScreen({ navigation }) {
       <View style={styles.optionsList}>
         <TouchableOption
           title="摇晃关闭"
-          description="用力摇晃手机20秒"
+          description="用力摇晃手机来关闭"
           selected={triggerType === 'shake'}
           onPress={() => setTriggerType('shake')}
         />
         <TouchableOption
           title="距离关闭"
-          description="起床并移动一定距离 (暂未实现)"
+          description="起床并移动一定距离 (演示版本)"
           selected={triggerType === 'gps'}
           onPress={() => setTriggerType('gps')}
-          disabled={true}
-        />
-        <TouchableOption
-          title="两种方式"
-          description="可选择摇晃或移动 (暂未实现)"
-          selected={triggerType === 'both'}
-          onPress={() => setTriggerType('both')}
-          disabled={true}
         />
       </View>
     </View>
@@ -135,19 +108,19 @@ export default function SetAlarmScreen({ navigation }) {
       <View style={styles.optionsList}>
         <TouchableOption
           title="简单"
-          description="较少的摇晃次数"
+          description="较少的摇晃次数 (10次)"
           selected={difficulty === 'easy'}
           onPress={() => setDifficulty('easy')}
         />
         <TouchableOption
           title="普通"
-          description="标准的摇晃次数"
+          description="标准的摇晃次数 (20次)"
           selected={difficulty === 'normal'}
           onPress={() => setDifficulty('normal')}
         />
         <TouchableOption
           title="困难"
-          description="更多的摇晃次数"
+          description="更多的摇晃次数 (35次)"
           selected={difficulty === 'hard'}
           onPress={() => setDifficulty('hard')}
         />
@@ -156,35 +129,19 @@ export default function SetAlarmScreen({ navigation }) {
   );
 
   return (
-    <ScrollView style={globalStyles.container}>
-      <Text style={globalStyles.title}>
-        {isEditMode ? '编辑闹钟' : '设置闹钟'}
-      </Text>
+    <ScrollView style={globalStyles.container} contentContainerStyle={styles.scrollContent}>
+      <Text style={globalStyles.title}>设置闹钟</Text>
 
-      <TimePicker
-        value={selectedTime}
-        onTimeChange={setSelectedTime}
-      />
-
+      {renderTimePicker()}
       {renderTriggerTypeSelector()}
       {renderDifficultySelector()}
 
       <View style={styles.actionButtons}>
         <Button
-          title={isEditMode ? '保存修改' : '创建闹钟'}
+          title="保存闹钟"
           onPress={handleSaveAlarm}
-          disabled={loading}
           style={styles.primaryButton}
         />
-
-        {isEditMode && (
-          <Button
-            title="删除闹钟"
-            onPress={handleDeleteAlarm}
-            variant="danger"
-            style={styles.deleteButton}
-          />
-        )}
 
         <Button
           title="取消"
@@ -193,41 +150,45 @@ export default function SetAlarmScreen({ navigation }) {
           style={styles.cancelButton}
         />
       </View>
+
+      {/* 功能说明 */}
+      <View style={styles.infoCard}>
+        <Text style={styles.infoTitle}>💡 功能说明</Text>
+        <Text style={styles.infoText}>
+          • 本演示版本支持基本的闹钟设置{'\n'}
+          • 摇晃功能在触发页面中可体验{'\n'}
+          • 统计数据会保存在本地{'\n'}
+          • 所有功能均为演示版本
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
 // 可触摸选项组件
-function TouchableOption({ title, description, selected, onPress, disabled = false }) {
+function TouchableOption({ title, description, selected, onPress }) {
   return (
     <TouchableOpacity
       style={[
         styles.option,
-        selected && styles.selectedOption,
-        disabled && styles.disabledOption
+        selected && styles.selectedOption
       ]}
-      onPress={disabled ? null : onPress}
-      disabled={disabled}
+      onPress={onPress}
     >
       <View style={styles.optionContent}>
         <Text style={[
           styles.optionTitle,
-          selected && styles.selectedOptionTitle,
-          disabled && styles.disabledText
+          selected && styles.selectedOptionTitle
         ]}>
           {title}
         </Text>
-        <Text style={[
-          styles.optionDescription,
-          disabled && styles.disabledText
-        ]}>
+        <Text style={styles.optionDescription}>
           {description}
         </Text>
       </View>
       <View style={[
         styles.radioButton,
-        selected && styles.selectedRadioButton,
-        disabled && styles.disabledRadioButton
+        selected && styles.selectedRadioButton
       ]}>
         {selected && <View style={styles.radioButtonInner} />}
       </View>
@@ -235,9 +196,80 @@ function TouchableOption({ title, description, selected, onPress, disabled = fal
   );
 }
 
-const { TouchableOpacity } = require('react-native');
-
 const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 20,
+  },
+
+  timePickerCard: {
+    ...globalStyles.card,
+    marginVertical: 15,
+  },
+
+  timeContainer: {
+    alignItems: 'center',
+  },
+
+  timeDisplay: {
+    backgroundColor: '#2a2a2a',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+
+  timeText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    fontFamily: 'monospace',
+  },
+
+  timeControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+
+  timeControl: {
+    alignItems: 'center',
+  },
+
+  timeLabel: {
+    fontSize: 16,
+    color: '#cccccc',
+    marginBottom: 10,
+  },
+
+  controlButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+
+  controlButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  controlButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+
+  controlValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    minWidth: 40,
+    textAlign: 'center',
+  },
+
   sectionCard: {
     ...globalStyles.card,
     marginVertical: 10,
@@ -272,10 +304,7 @@ const styles = StyleSheet.create({
 
   selectedOption: {
     borderColor: '#ffffff',
-  },
-
-  disabledOption: {
-    opacity: 0.5,
+    backgroundColor: '#3a3a3a',
   },
 
   optionContent: {
@@ -298,10 +327,6 @@ const styles = StyleSheet.create({
     color: '#cccccc',
   },
 
-  disabledText: {
-    color: '#666666',
-  },
-
   radioButton: {
     width: 20,
     height: 20,
@@ -314,10 +339,6 @@ const styles = StyleSheet.create({
 
   selectedRadioButton: {
     borderColor: '#ffffff',
-  },
-
-  disabledRadioButton: {
-    borderColor: '#666666',
   },
 
   radioButtonInner: {
@@ -336,11 +357,26 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  deleteButton: {
-    marginBottom: 15,
-  },
-
   cancelButton: {
     marginBottom: 10,
+  },
+
+  infoCard: {
+    ...globalStyles.card,
+    marginVertical: 10,
+    backgroundColor: '#1a3d5c',
+  },
+
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 10,
+  },
+
+  infoText: {
+    fontSize: 14,
+    color: '#cccccc',
+    lineHeight: 20,
   },
 });

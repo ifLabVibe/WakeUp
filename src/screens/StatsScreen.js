@@ -155,43 +155,17 @@ export default function StatsScreen({ navigation }) {
   const renderMonthlyCard = () => (
     <View style={styles.monthlyCard}>
       <Text style={styles.cardTitle}>本月数据</Text>
-      {monthlyStats ? (
-        <View style={styles.monthlyContent}>
-          <View style={styles.monthlyStatsRow}>
-            <View style={styles.monthlyStatItem}>
-              <Text style={styles.monthlyStatValue}>{monthlyStats.monthlySuccessRate}%</Text>
-              <Text style={styles.monthlyStatLabel}>月成功率</Text>
-            </View>
-            <View style={styles.monthlyStatItem}>
-              <Text style={styles.monthlyStatValue}>{monthlyStats.monthlySuccess}/{monthlyStats.monthlyDays}</Text>
-              <Text style={styles.monthlyStatLabel}>成功天数</Text>
-            </View>
-            <View style={styles.monthlyStatItem}>
-              <Text style={[styles.monthlyStatValue, styles.penaltyValue]}>
-                ¥{monthlyStats.monthlyPenalty}
-              </Text>
-              <Text style={styles.monthlyStatLabel}>月扣款</Text>
-            </View>
-          </View>
-        </View>
-      ) : (
-        <Text style={styles.noDataText}>暂无本月数据</Text>
-      )}
+      <View style={styles.monthlyContent}>
+        <Text style={styles.noDataText}>月度统计功能开发中...</Text>
+      </View>
     </View>
   );
 
   const renderInsightsCard = () => (
-    summaryReport && summaryReport.insights && summaryReport.insights.length > 0 && (
-      <View style={styles.insightsCard}>
-        <Text style={styles.cardTitle}>智能洞察</Text>
-        {summaryReport.insights.map((insight, index) => (
-          <View key={index} style={[styles.insightItem, styles[`insight_${insight.type}`]]}>
-            <Text style={styles.insightTitle}>{insight.title}</Text>
-            <Text style={styles.insightMessage}>{insight.message}</Text>
-          </View>
-        ))}
-      </View>
-    )
+    <View style={styles.insightsCard}>
+      <Text style={styles.cardTitle}>智能洞察</Text>
+      <Text style={styles.noDataText}>智能分析功能开发中...</Text>
+    </View>
   );
 
   const renderWeeklyCard = () => (
