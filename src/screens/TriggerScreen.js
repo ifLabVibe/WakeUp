@@ -141,6 +141,7 @@ export default function TriggerScreen({ route, navigation }) {
     return () => {
       clearInterval(timer);
       backHandler.remove();
+      stopListening(); // 清理传感器监听
     };
   }, [difficulty]);
 

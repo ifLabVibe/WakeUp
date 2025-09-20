@@ -9,6 +9,8 @@ import { APP_CONFIG } from '../utils/constants';
 export class AlarmService {
   static currentAlarmTimeout = null;
   static isAlarmActive = false;
+  static alarmSound = null;
+  static navigationRef = null;
 
   /**
    * 创建新闹钟
@@ -398,6 +400,31 @@ export class AlarmService {
       }
     } catch (error) {
       console.error('恢复闹钟调度失败:', error);
+    }
+  }
+
+  /**
+   * 清理所有资源
+   * 应用关闭或重启时调用
+   */
+  static cleanup() {
+    try {
+      // 清理定时器
+      if (this.currentAlarmTimeout) {
+        clearTimeout(this.currentAlarmTimeout);
+        this.currentAlarmTimeout = null;
+      }
+
+      // 停止音效
+      this.stopAlarmSound();
+
+      // 重置状态
+      this.isAlarmActive = false;
+      this.navigationRef = null;
+
+      console.log('AlarmService 资源清理完成');
+    } catch (error) {
+      console.error('AlarmService 清理失败:', error);
     }
   }
 }

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唤醒闹钟 - 阶段7完整演示</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a, #065f46);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        .demo-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+        .stage6 { border-left-color: #f59e0b; }
+        .stage7 { border-left-color: #8b5cf6; }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .card-blue { background: rgba(30, 58, 138, 0.3); }
+        .card-green { background: rgba(6, 95, 70, 0.3); }
+        .card-purple { background: rgba(139, 92, 246, 0.3); }
+        .stats-demo {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+            margin: 10px;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+        .access-info {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .warning {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .insight-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .insight-item {
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .insight-success { background: rgba(6, 95, 70, 0.3); border-left-color: #10b981; }
+        .insight-warning { background: rgba(146, 64, 14, 0.3); border-left-color: #f59e0b; }
+        .insight-financial { background: rgba(124, 45, 18, 0.3); border-left-color: #ea580c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🌅 唤醒闹钟</h1>
+            <p class="subtitle">阶段7完整功能演示 - 统计页面和数据展示</p>
+        </div>
+
+        <div class="access-info">
+            <h3>🚀 应用访问说明</h3>
+            <p><strong>当前状态</strong>: 您看到的是Expo开发服务器调试界面，这是正常的。</p>
+            <p><strong>正确访问方式</strong>:</p>
+            <ol>
+                <li>在浏览器中按 <code>w</code> 键启动Web版本</li>
+                <li>或者访问: <strong>http://localhost:19006</strong> (Web应用)</li>
+                <li>或者使用Expo Go应用扫描二维码在手机上查看</li>
+            </ol>
+        </div>
+
+        <div class="demo-section stage6">
+            <h2>💰 阶段6: 贪睡惩罚机制</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>累进扣款系统</h4>
+                    <div class="stats-demo">
+                        <div class="stat-item">
+                            <div class="stat-value">¥7.5</div>
+                            <div class="stat-label">首次贪睡</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">¥15</div>
+                            <div class="stat-label">第二次</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">¥22.5</div>
+                            <div class="stat-label">第三次</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <h4>智能分析</h4>
+                    <ul>
+                        <li>连续记录追踪</li>
+                        <li>行为模式识别</li>
+                        <li>个性化建议</li>
+                        <li>里程碑系统</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section stage7">
+            <h2>📊 阶段7: 统计页面和数据展示</h2>
+
+            <div class="feature-grid">
+                <div class="feature-card card-blue">
+                    <h4>📅 今日数据卡片</h4>
+                    <p><strong>深蓝色主题设计</strong></p>
+                    <div class="stats-demo">
+                        <div class="stat-item">
+                            <div class="stat-value">⚪</div>
+                            <div class="stat-label">今日状态</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">贪睡次数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">¥0</div>
+                            <div class="stat-label">扣款金额</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card card-green">
+                    <h4>📆 月度数据卡片</h4>
+                    <p><strong>深绿色主题设计</strong></p>
+                    <div class="stats-demo">
+                        <div class="stat-item">
+                            <div class="stat-value">33.3%</div>
+                            <div class="stat-label">月成功率</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">2/6</div>
+                            <div class="stat-label">成功天数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">¥60</div>
+                            <div class="stat-label">月扣款</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card card-purple">
+                    <h4>🧠 智能洞察卡片</h4>
+                    <p><strong>彩色边框设计</strong></p>
+                    <div class="insight-demo">
+                        <div class="insight-item insight-warning">
+                            <strong>有待改进</strong><br>
+                            成功率为 33.3%，可以做得更好！
+                        </div>
+                        <div class="insight-item insight-financial">
+                            <strong>扣款提醒</strong><br>
+                            累计模拟扣款已达 ¥60，早起能省钱！
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>📈 本周记录趋势</h3>
+            <div class="feature-card">
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center;">
+                    <div><strong>周日</strong><br>❌ ¥22.5</div>
+                    <div><strong>周一</strong><br>✅ ¥0</div>
+                    <div><strong>周二</strong><br>❌ ¥15</div>
+                    <div><strong>周三</strong><br>✅ ¥0</div>
+                    <div><strong>周四</strong><br>❌ ¥7.5</div>
+                    <div><strong>周五</strong><br>❌ ¥15</div>
+                    <div><strong>周六</strong><br>⚪ ¥0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🏆 完整功能特点</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>⚡ 性能优化</h4>
+                    <ul>
+                        <li>并行数据加载 (Promise.all)</li>
+                        <li>StatsService架构重构</li>
+                        <li>智能缓存系统</li>
+                        <li>按需渲染组件</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>🎨 视觉设计</h4>
+                    <ul>
+                        <li>4种主题颜色</li>
+                        <li>6种洞察类型</li>
+                        <li>响应式布局</li>
+                        <li>实时状态图标</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 数据分析</h4>
+                    <ul>
+                        <li>多维度统计 (日/周/月)</li>
+                        <li>成功率趋势分析</li>
+                        <li>贪睡行为模式</li>
+                        <li>个性化建议</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="warning">
+            <h3>⚠️ 当前状态说明</h3>
+            <p>您当前看到的是Expo开发服务器的配置界面，这包含了应用的元数据和调试信息。要查看实际的React Native应用，请:</p>
+            <ol>
+                <li><strong>按键盘 'w' 键</strong> - 自动打开Web版本</li>
+                <li><strong>访问 http://localhost:19006</strong> - 直接访问Web应用</li>
+                <li><strong>使用手机扫码</strong> - 在Expo Go中查看原生版本</li>
+            </ol>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="http://localhost:19006" class="btn">🌐 打开Web应用</a>
+            <a href="#" onclick="alert('请在开发服务器控制台按 w 键启动Web版本')" class="btn">📱 启动Web版本</a>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; opacity: 0.7;">
+            <p>🚀 阶段7开发完成 | 📈 +630行代码 | 🎨 专业级统计系统</p>
+        </div>
+    </div>
+</body>
+</html>

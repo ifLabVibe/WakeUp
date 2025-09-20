@@ -18,6 +18,7 @@ export default function HomeScreen({ navigation }) {
   const [todayStats, setTodayStats] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   const loadData = async () => {
     try {
@@ -51,6 +52,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleToggleAlarm = async () => {
     try {
+      setToggleLoading(true);
       const newStatus = !alarmStatus.isActive;
       await AlarmService.toggleAlarm(newStatus);
       await loadData(); // 刷新状态
@@ -62,6 +64,8 @@ export default function HomeScreen({ navigation }) {
     } catch (error) {
       console.error('切换闹钟状态失败:', error);
       Alert.alert('错误', '操作失败，请重试');
+    } finally {
+      setToggleLoading(false);
     }
   };
 
@@ -100,6 +104,8 @@ export default function HomeScreen({ navigation }) {
           onPress={handleToggleAlarm}
           variant={alarmStatus.isActive ? 'danger' : 'primary'}
           style={styles.toggleButton}
+          loading={toggleLoading}
+          loadingText={alarmStatus.isActive ? '禁用中...' : '启用中...'}
         />
       </View>
     );
