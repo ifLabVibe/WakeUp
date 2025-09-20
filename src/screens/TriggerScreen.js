@@ -12,6 +12,7 @@ import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
 import { AlarmService } from '../services/alarmService';
 import { StorageService } from '../services/storageService';
+import { PenaltyService } from '../services/penaltyService';
 import { useShakeDetection } from '../hooks/useShakeDetection';
 import SensorSettings from '../components/SensorSettings';
 
@@ -361,7 +362,7 @@ export default function TriggerScreen({ route, navigation }) {
 
         {canSnooze && (
           <Button
-            title={`贪睡 5分钟 (扣款¥${(snoozeCount + 1) * 5})`}
+            title={`贪睡 5分钟 (扣款¥${PenaltyService.calculatePenalty(snoozeCount + 1)})`}
             onPress={handleSnooze}
             variant="danger"
             style={styles.snoozeButton}

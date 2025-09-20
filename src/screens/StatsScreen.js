@@ -4,6 +4,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
 import { StorageService } from '../services/storageService';
+import { PenaltyService } from '../services/penaltyService';
+import PenaltyChart from '../components/PenaltyChart';
+import PenaltySettings from '../components/PenaltySettings';
 import { getDateString, getWeekdayName, isToday } from '../utils/timeUtils';
 
 export default function StatsScreen({ navigation }) {
@@ -17,6 +20,8 @@ export default function StatsScreen({ navigation }) {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [penaltyReport, setPenaltyReport] = useState(null);
+  const [showPenaltySettings, setShowPenaltySettings] = useState(false);
 
   const loadStats = async () => {
     try {
@@ -62,6 +67,10 @@ export default function StatsScreen({ navigation }) {
         successDays,
         totalDays
       });
+
+      // 加载详细惩罚报告
+      const report = await PenaltyService.generatePenaltyReport();
+      setPenaltyReport(report);
     } catch (error) {
       console.error('加载统计数据失败:', error);
       Alert.alert('错误', '加载数据失败，请重试');
@@ -217,6 +226,44 @@ export default function StatsScreen({ navigation }) {
 
       {renderSummaryCard()}
       {renderWeeklyCard()}
+
+      {/* 惩罚图表 */}
+      {penaltyReport && penaltyReport.weekly && (
+        <View style={styles.penaltySection}>
+          <Text style={styles.cardTitle}>惩罚趋势</Text>
+          <PenaltyChart
+            data={weeklyStats.map(item => ({
+              label: item.dayName,
+              value: item.penaltyAmount || 0
+            }))}
+            title="本周扣款趋势"
+          />
+        </View>
+      )}
+
+      {/* 惩罚设置按钮 */}
+      <View style={styles.settingsSection}>
+        <Button
+          title={showPenaltySettings ? "隐藏惩罚设置" : "惩罚设置"}
+          onPress={() => setShowPenaltySettings(!showPenaltySettings)}
+          variant="secondary"
+          style={styles.settingsButton}
+        />
+      </View>
+
+      {/* 惩罚设置组件 */}
+      {showPenaltySettings && (
+        <View style={styles.penaltySettingsSection}>
+          <PenaltySettings
+            onSettingsChange={(settings) => {
+              console.log('惩罚设置已更新:', settings);
+              // 重新加载数据以反映新设置
+              loadStats();
+            }}
+          />
+        </View>
+      )}
+
       {renderInfoCard()}
 
       <View style={styles.actionButtons}>
@@ -394,5 +441,24 @@ const styles = StyleSheet.create({
 
   actionButton: {
     marginVertical: 8,
+  },
+
+  penaltySection: {
+    ...globalStyles.card,
+    marginVertical: 15,
+  },
+
+  settingsSection: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+
+  settingsButton: {
+    width: '50%',
+  },
+
+  penaltySettingsSection: {
+    ...globalStyles.card,
+    marginVertical: 10,
   },
 });

@@ -1,4 +1,5 @@
 import { StorageService } from './storageService';
+import { PenaltyService } from './penaltyService';
 import { getTimeUntilTarget, formatTime } from '../utils/timeUtils';
 import { APP_CONFIG } from '../utils/constants';
 
@@ -335,8 +336,8 @@ export class AlarmService {
         throw new Error('已达到最大贪睡次数');
       }
 
-      // 记录贪睡行为
-      const snoozeResult = await StorageService.recordSnooze(alarmId);
+      // 记录贪睡行为，使用PenaltyService计算扣款
+      const snoozeResult = await PenaltyService.recordSnooze(alarmId);
 
       // 重新调度闹钟（5分钟后）
       const newTime = new Date(Date.now() + APP_CONFIG.SNOOZE_INTERVAL);
@@ -368,8 +369,8 @@ export class AlarmService {
       // 停止闹钟音效
       await this.stopAlarmSound();
 
-      // 记录成功关闭
-      await StorageService.recordWakeUpSuccess(alarmId);
+      // 记录成功关闭，使用PenaltyService记录
+      await PenaltyService.recordWakeUpSuccess();
       await this.cancelAlarm();
 
       console.log('闹钟成功关闭，起床成功！');
