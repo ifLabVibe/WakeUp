@@ -5,6 +5,7 @@ import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
 import { StorageService } from '../services/storageService';
 import { PenaltyService } from '../services/penaltyService';
+import { StatsService } from '../services/statsService';
 import PenaltyChart from '../components/PenaltyChart';
 import PenaltySettings from '../components/PenaltySettings';
 import { getDateString, getWeekdayName, isToday } from '../utils/timeUtils';
@@ -22,55 +23,36 @@ export default function StatsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [penaltyReport, setPenaltyReport] = useState(null);
   const [showPenaltySettings, setShowPenaltySettings] = useState(false);
+  const [summaryReport, setSummaryReport] = useState(null);
+  const [monthlyStats, setMonthlyStats] = useState(null);
+  const [todayStats, setTodayStats] = useState(null);
 
   const loadStats = async () => {
     try {
-      const allStats = await StorageService.getStats();
+      // 使用 StatsService 加载所有统计数据
+      const [
+        weekly,
+        total,
+        monthly,
+        today,
+        summaryReport,
+        penaltyReport
+      ] = await Promise.all([
+        StatsService.getWeeklyStats(),
+        StatsService.getTotalStats(),
+        StatsService.getMonthlyStats(),
+        StatsService.getTodayStats(),
+        StatsService.generateSummaryReport(),
+        PenaltyService.generatePenaltyReport()
+      ]);
 
-      // 计算最近7天的数据
-      const weekly = [];
-      for (let i = 6; i >= 0; i--) {
-        const dateStr = getDateString(i);
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-
-        weekly.push({
-          date: dateStr,
-          dayName: getWeekdayName(date),
-          isToday: isToday(dateStr),
-          ...allStats[dateStr] || {
-            wakeUpSuccess: null,
-            snoozeCount: 0,
-            penaltyAmount: 0
-          }
-        });
-      }
-
-      // 计算总体统计
-      let totalPenalty = 0;
-      let totalSnoozes = 0;
-      let successDays = 0;
-      let totalDays = 0;
-
-      Object.values(allStats).forEach(day => {
-        totalPenalty += day.penaltyAmount || 0;
-        totalSnoozes += day.snoozeCount || 0;
-        if (day.wakeUpSuccess === true) successDays++;
-        if (day.wakeUpSuccess !== null) totalDays++;
-      });
-
+      // 更新所有状态
       setWeeklyStats(weekly);
-      setTotalStats({
-        totalPenalty,
-        totalSnoozes,
-        successRate: totalDays > 0 ? ((successDays / totalDays) * 100).toFixed(1) : 0,
-        successDays,
-        totalDays
-      });
-
-      // 加载详细惩罚报告
-      const report = await PenaltyService.generatePenaltyReport();
-      setPenaltyReport(report);
+      setTotalStats(total);
+      setMonthlyStats(monthly);
+      setTodayStats(today);
+      setSummaryReport(summaryReport);
+      setPenaltyReport(penaltyReport);
     } catch (error) {
       console.error('加载统计数据失败:', error);
       Alert.alert('错误', '加载数据失败，请重试');
@@ -153,6 +135,79 @@ export default function StatsScreen({ navigation }) {
     </View>
   );
 
+  const renderTodayCard = () => (
+    <View style={styles.todayCard}>
+      <Text style={styles.cardTitle}>今日数据</Text>
+      {todayStats ? (
+        <View style={styles.todayContent}>
+          <View style={styles.todayStatus}>
+            <Text style={styles.todayStatusText}>
+              {todayStats.wakeUpSuccess === true ? '✅ 今日成功起床' :
+               todayStats.wakeUpSuccess === false ? '❌ 今日有贪睡' :
+               '⚪ 今日暂无记录'}
+            </Text>
+          </View>
+          <View style={styles.todayStatsRow}>
+            <View style={styles.todayStatItem}>
+              <Text style={styles.todayStatValue}>{todayStats.snoozeCount}</Text>
+              <Text style={styles.todayStatLabel}>贪睡次数</Text>
+            </View>
+            <View style={styles.todayStatItem}>
+              <Text style={[styles.todayStatValue, styles.penaltyValue]}>
+                ¥{todayStats.penaltyAmount || 0}
+              </Text>
+              <Text style={styles.todayStatLabel}>扣款金额</Text>
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.noDataText}>暂无今日数据</Text>
+      )}
+    </View>
+  );
+
+  const renderMonthlyCard = () => (
+    <View style={styles.monthlyCard}>
+      <Text style={styles.cardTitle}>本月数据</Text>
+      {monthlyStats ? (
+        <View style={styles.monthlyContent}>
+          <View style={styles.monthlyStatsRow}>
+            <View style={styles.monthlyStatItem}>
+              <Text style={styles.monthlyStatValue}>{monthlyStats.monthlySuccessRate}%</Text>
+              <Text style={styles.monthlyStatLabel}>月成功率</Text>
+            </View>
+            <View style={styles.monthlyStatItem}>
+              <Text style={styles.monthlyStatValue}>{monthlyStats.monthlySuccess}/{monthlyStats.monthlyDays}</Text>
+              <Text style={styles.monthlyStatLabel}>成功天数</Text>
+            </View>
+            <View style={styles.monthlyStatItem}>
+              <Text style={[styles.monthlyStatValue, styles.penaltyValue]}>
+                ¥{monthlyStats.monthlyPenalty}
+              </Text>
+              <Text style={styles.monthlyStatLabel}>月扣款</Text>
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.noDataText}>暂无本月数据</Text>
+      )}
+    </View>
+  );
+
+  const renderInsightsCard = () => (
+    summaryReport && summaryReport.insights && summaryReport.insights.length > 0 && (
+      <View style={styles.insightsCard}>
+        <Text style={styles.cardTitle}>智能洞察</Text>
+        {summaryReport.insights.map((insight, index) => (
+          <View key={index} style={[styles.insightItem, styles[`insight_${insight.type}`]]}>
+            <Text style={styles.insightTitle}>{insight.title}</Text>
+            <Text style={styles.insightMessage}>{insight.message}</Text>
+          </View>
+        ))}
+      </View>
+    )
+  );
+
   const renderWeeklyCard = () => (
     <View style={styles.weeklyCard}>
       <Text style={styles.cardTitle}>本周记录</Text>
@@ -225,7 +280,10 @@ export default function StatsScreen({ navigation }) {
       <Text style={globalStyles.title}>起床统计</Text>
 
       {renderSummaryCard()}
+      {renderTodayCard()}
+      {renderMonthlyCard()}
       {renderWeeklyCard()}
+      {renderInsightsCard()}
 
       {/* 惩罚图表 */}
       {penaltyReport && penaltyReport.weekly && (
@@ -460,5 +518,147 @@ const styles = StyleSheet.create({
   penaltySettingsSection: {
     ...globalStyles.card,
     marginVertical: 10,
+  },
+
+  // 今日数据卡片样式
+  todayCard: {
+    ...globalStyles.card,
+    marginVertical: 10,
+    backgroundColor: '#1e3a8a', // 深蓝色背景
+  },
+
+  todayContent: {
+    alignItems: 'center',
+  },
+
+  todayStatus: {
+    marginBottom: 15,
+  },
+
+  todayStatusText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+
+  todayStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+
+  todayStatItem: {
+    alignItems: 'center',
+  },
+
+  todayStatValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 5,
+  },
+
+  todayStatLabel: {
+    fontSize: 12,
+    color: '#cccccc',
+  },
+
+  // 月度数据卡片样式
+  monthlyCard: {
+    ...globalStyles.card,
+    marginVertical: 10,
+    backgroundColor: '#065f46', // 深绿色背景
+  },
+
+  monthlyContent: {
+    alignItems: 'center',
+  },
+
+  monthlyStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+
+  monthlyStatItem: {
+    alignItems: 'center',
+  },
+
+  monthlyStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 5,
+  },
+
+  monthlyStatLabel: {
+    fontSize: 12,
+    color: '#cccccc',
+  },
+
+  // 智能洞察样式
+  insightsCard: {
+    ...globalStyles.card,
+    marginVertical: 15,
+    backgroundColor: '#374151',
+  },
+
+  insightItem: {
+    padding: 12,
+    marginVertical: 5,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+  },
+
+  insight_success: {
+    backgroundColor: '#065f46',
+    borderLeftColor: '#10b981',
+  },
+
+  insight_warning: {
+    backgroundColor: '#92400e',
+    borderLeftColor: '#f59e0b',
+  },
+
+  insight_danger: {
+    backgroundColor: '#7f1d1d',
+    borderLeftColor: '#ef4444',
+  },
+
+  insight_financial: {
+    backgroundColor: '#7c2d12',
+    borderLeftColor: '#ea580c',
+  },
+
+  insight_achievement: {
+    backgroundColor: '#4c1d95',
+    borderLeftColor: '#8b5cf6',
+  },
+
+  insight_motivation: {
+    backgroundColor: '#1e40af',
+    borderLeftColor: '#3b82f6',
+  },
+
+  insightTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+
+  insightMessage: {
+    fontSize: 13,
+    color: '#e5e7eb',
+    lineHeight: 18,
+  },
+
+  // 通用样式
+  noDataText: {
+    color: '#9ca3af',
+    fontSize: 14,
+    textAlign: 'center',
+    padding: 20,
   },
 });
