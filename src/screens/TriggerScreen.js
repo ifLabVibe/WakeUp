@@ -12,6 +12,8 @@ import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
 import { AlarmService } from '../services/alarmService';
 import { StorageService } from '../services/storageService';
+import { useShakeDetection } from '../hooks/useShakeDetection';
+import SensorSettings from '../components/SensorSettings';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,17 +24,93 @@ export default function TriggerScreen({ route, navigation }) {
     difficulty: 'normal'
   };
 
-  const [shakeCount, setShakeCount] = useState(0);
   const [requiredShakes, setRequiredShakes] = useState(20);
-  const [isShaking, setIsShaking] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [canSnooze, setCanSnooze] = useState(true);
   const [snoozeCount, setSnoozeCount] = useState(0);
+  const [shakeIntensity, setShakeIntensity] = useState(0);
+  const [useSensorShake, setUseSensorShake] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [customThreshold, setCustomThreshold] = useState(null);
 
   // 动画值
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
+
+  // 摇晃检测配置
+  const getShakeThreshold = () => {
+    if (customThreshold !== null) return customThreshold;
+    const thresholds = { easy: 12, normal: 15, hard: 18 };
+    return thresholds[difficulty] || 15;
+  };
+
+  // 摇晃检测Hook
+  const {
+    isShaking,
+    shakeCount,
+    shakeIntensity: currentIntensity,
+    shakePattern,
+    resetShakeCount,
+    startListening,
+    stopListening
+  } = useShakeDetection({
+    threshold: getShakeThreshold(),
+    minimumShakeCount: 1,
+    shakeInterval: 300,
+    enabled: useSensorShake && triggerType === 'shake',
+    onShake: handleSensorShake,
+    onShakeProgress: handleShakeProgress
+  });
+
+  // 传感器摇晃处理
+  const handleSensorShake = (count, intensity) => {
+    setShakeIntensity(intensity);
+    triggerShakeAnimation();
+    updateProgress(count);
+  };
+
+  const handleShakeProgress = (count, intensity) => {
+    setShakeIntensity(intensity);
+    triggerShakeAnimation();
+    updateProgress(count);
+  };
+
+  // 更新进度
+  const updateProgress = (count) => {
+    // 更新进度动画
+    Animated.timing(progressAnimation, {
+      toValue: count / requiredShakes,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+    // 检查是否完成
+    if (count >= requiredShakes) {
+      handleAlarmComplete();
+    }
+  };
+
+  // 触发摇晃动画
+  const triggerShakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnimation, {
+        toValue: 10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: -10,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shakeAnimation, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   useEffect(() => {
     // 根据难度设置所需摇晃次数
@@ -94,49 +172,14 @@ export default function TriggerScreen({ route, navigation }) {
     ).start();
   };
 
-  const handleShake = () => {
+  // 手动摇晃处理（备用方案）
+  const handleManualShake = () => {
     if (isShaking) return;
 
-    setIsShaking(true);
-    setShakeCount(prev => {
-      const newCount = prev + 1;
-
-      // 摇晃动画
-      Animated.sequence([
-        Animated.timing(shakeAnimation, {
-          toValue: 10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnimation, {
-          toValue: -10,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnimation, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // 更新进度动画
-      Animated.timing(progressAnimation, {
-        toValue: newCount / requiredShakes,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
-
-      // 检查是否完成
-      if (newCount >= requiredShakes) {
-        handleAlarmComplete();
-      }
-
-      return newCount;
-    });
-
-    // 重置摇晃状态
-    setTimeout(() => setIsShaking(false), 300);
+    const newCount = shakeCount + 1;
+    setShakeIntensity(15); // 模拟强度
+    triggerShakeAnimation();
+    updateProgress(newCount);
   };
 
   const handleAlarmComplete = async () => {
@@ -257,13 +300,49 @@ export default function TriggerScreen({ route, navigation }) {
           </Text>
         </View>
 
-        {/* 摇晃按钮（用于模拟摇晃，实际应用中会使用传感器） */}
-        <Button
-          title="模拟摇晃"
-          onPress={handleShake}
-          disabled={isShaking}
-          style={styles.shakeButton}
-        />
+        {/* 传感器状态和控制 */}
+        <View style={styles.sensorContainer}>
+          <Text style={styles.sensorStatus}>
+            传感器: {useSensorShake ? '已启用' : '已禁用'}
+          </Text>
+          <Text style={styles.sensorDetails}>
+            强度: {shakeIntensity.toFixed(1)} | 模式: {shakePattern}
+          </Text>
+
+          <View style={styles.sensorControls}>
+            <Button
+              title={useSensorShake ? '禁用传感器' : '启用传感器'}
+              onPress={() => setUseSensorShake(!useSensorShake)}
+              variant="secondary"
+              style={styles.sensorButton}
+            />
+
+            <Button
+              title="设置"
+              onPress={() => setShowSettings(!showSettings)}
+              variant="secondary"
+              style={styles.sensorButton}
+            />
+
+            {!useSensorShake && (
+              <Button
+                title="手动摇晃"
+                onPress={handleManualShake}
+                disabled={isShaking}
+                style={styles.manualButton}
+              />
+            )}
+          </View>
+
+          {showSettings && (
+            <SensorSettings
+              threshold={getShakeThreshold()}
+              onThresholdChange={setCustomThreshold}
+              difficulty={difficulty}
+              enabled={useSensorShake}
+            />
+          )}
+        </View>
       </Animated.View>
 
       {/* 贪睡和统计信息 */}
@@ -274,6 +353,9 @@ export default function TriggerScreen({ route, navigation }) {
           </Text>
           <Text style={styles.statsText}>
             难度: {difficulty === 'easy' ? '简单' : difficulty === 'normal' ? '普通' : '困难'}
+          </Text>
+          <Text style={styles.statsText}>
+            阈值: {getShakeThreshold()}
           </Text>
         </View>
 
@@ -372,9 +454,41 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  shakeButton: {
-    paddingHorizontal: 40,
-    paddingVertical: 15,
+  sensorContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+  },
+
+  sensorStatus: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 5,
+  },
+
+  sensorDetails: {
+    fontSize: 14,
+    color: '#cccccc',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+
+  sensorControls: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+
+  sensorButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+
+  manualButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
   },
 
   bottomContainer: {
@@ -389,7 +503,7 @@ const styles = StyleSheet.create({
   },
 
   statsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#cccccc',
   },
 
