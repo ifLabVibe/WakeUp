@@ -1,19 +1,35 @@
 // 闹钟数据结构
 export const ALARM_SCHEMA = {
-  id: 'string',
-  time: 'string',        // "HH:MM" 格式
-  isActive: 'boolean',
-  createdAt: 'date',
-  snoozeCount: 'number',
-  lastSnoozeTime: 'date'
+  id: 'string',           // 唯一标识符
+  time: 'string',         // "HH:MM" 格式
+  isActive: 'boolean',    // 是否启用
+  createdAt: 'string',    // ISO日期字符串
+  updatedAt: 'string',    // 最后更新时间
+  snoozeCount: 'number',  // 今日贪睡次数
+  lastSnoozeTime: 'string', // 最后贪睡时间
+  triggerType: 'string',  // 'shake' | 'gps' | 'both'
+  difficulty: 'string',   // 'easy' | 'normal' | 'hard'
+  soundId: 'string',      // 铃声ID
+  label: 'string'         // 闹钟标签
 };
 
 // 统计数据结构
 export const STATS_SCHEMA = {
-  date: 'string',        // "YYYY-MM-DD" 格式
-  wakeUpSuccess: 'boolean',
-  snoozeCount: 'number',
-  penaltyAmount: 'number'
+  date: 'string',         // "YYYY-MM-DD" 格式
+  wakeUpSuccess: 'boolean', // 是否成功起床
+  snoozeCount: 'number',  // 贪睡次数
+  penaltyAmount: 'number', // 惩罚金额
+  triggerTime: 'string',  // 闹钟触发时间
+  completeTime: 'string', // 完成触发时间
+  triggerType: 'string'   // 使用的触发方式
+};
+
+// 默认闹钟配置
+export const DEFAULT_ALARM = {
+  triggerType: 'shake',
+  difficulty: 'normal',
+  soundId: 'default',
+  label: '起床闹钟'
 };
 
 // 应用配置
