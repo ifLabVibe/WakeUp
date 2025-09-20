@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
+import { AlarmService } from '../services/alarmService';
 
 export default function SetAlarmScreen({ navigation }) {
   const [selectedHour, setSelectedHour] = useState(7);
@@ -15,16 +16,31 @@ export default function SetAlarmScreen({ navigation }) {
     return `${h}:${m}`;
   };
 
-  const handleSaveAlarm = () => {
-    const alarmTime = formatTime(selectedHour, selectedMinute);
+  const handleSaveAlarm = async () => {
+    try {
+      const alarmTime = formatTime(selectedHour, selectedMinute);
 
-    Alert.alert(
-      '成功',
-      `闹钟已设置为 ${alarmTime}\n触发方式: ${triggerType === 'shake' ? '摇晃关闭' : '距离关闭'}\n难度: ${difficulty === 'easy' ? '简单' : difficulty === 'normal' ? '普通' : '困难'}`,
-      [
-        { text: '确定', onPress: () => navigation.goBack() }
-      ]
-    );
+      // 创建并保存闹钟
+      await AlarmService.createAlarm(alarmTime, {
+        triggerType: triggerType,
+        difficulty: difficulty
+      });
+
+      Alert.alert(
+        '成功',
+        `闹钟已设置为 ${alarmTime}\n触发方式: ${triggerType === 'shake' ? '摇晃关闭' : '距离关闭'}\n难度: ${difficulty === 'easy' ? '简单' : difficulty === 'normal' ? '普通' : '困难'}`,
+        [
+          { text: '确定', onPress: () => navigation.goBack() }
+        ]
+      );
+    } catch (error) {
+      console.error('保存闹钟失败:', error);
+      Alert.alert(
+        '错误',
+        '闹钟保存失败，请重试',
+        [{ text: '确定' }]
+      );
+    }
   };
 
   const renderTimePicker = () => (
