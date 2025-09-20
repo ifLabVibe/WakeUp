@@ -6,9 +6,6 @@ import Button from '../components/Button';
 import { StorageService } from '../services/storageService';
 import { PenaltyService } from '../services/penaltyService';
 import { StatsService } from '../services/statsService';
-import PenaltyChart from '../components/PenaltyChart';
-import PenaltySettings from '../components/PenaltySettings';
-import { getDateString, getWeekdayName, isToday } from '../utils/timeUtils';
 
 export default function StatsScreen({ navigation }) {
   const [weeklyStats, setWeeklyStats] = useState([]);
@@ -21,38 +18,27 @@ export default function StatsScreen({ navigation }) {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [penaltyReport, setPenaltyReport] = useState(null);
-  const [showPenaltySettings, setShowPenaltySettings] = useState(false);
   const [summaryReport, setSummaryReport] = useState(null);
   const [monthlyStats, setMonthlyStats] = useState(null);
   const [todayStats, setTodayStats] = useState(null);
 
   const loadStats = async () => {
     try {
-      // 使用 StatsService 加载所有统计数据
+      // 使用 StatsService 加载统计数据
       const [
         weekly,
         total,
-        monthly,
-        today,
-        summaryReport,
-        penaltyReport
+        today
       ] = await Promise.all([
         StatsService.getWeeklyStats(),
         StatsService.getTotalStats(),
-        StatsService.getMonthlyStats(),
-        StatsService.getTodayStats(),
-        StatsService.generateSummaryReport(),
-        PenaltyService.generatePenaltyReport()
+        StorageService.getTodayStats()
       ]);
 
-      // 更新所有状态
+      // 更新状态
       setWeeklyStats(weekly);
       setTotalStats(total);
-      setMonthlyStats(monthly);
       setTodayStats(today);
-      setSummaryReport(summaryReport);
-      setPenaltyReport(penaltyReport);
     } catch (error) {
       console.error('加载统计数据失败:', error);
       Alert.alert('错误', '加载数据失败，请重试');
@@ -285,42 +271,13 @@ export default function StatsScreen({ navigation }) {
       {renderWeeklyCard()}
       {renderInsightsCard()}
 
-      {/* 惩罚图表 */}
-      {penaltyReport && penaltyReport.weekly && (
-        <View style={styles.penaltySection}>
-          <Text style={styles.cardTitle}>惩罚趋势</Text>
-          <PenaltyChart
-            data={weeklyStats.map(item => ({
-              label: item.dayName,
-              value: item.penaltyAmount || 0
-            }))}
-            title="本周扣款趋势"
-          />
-        </View>
-      )}
-
-      {/* 惩罚设置按钮 */}
-      <View style={styles.settingsSection}>
-        <Button
-          title={showPenaltySettings ? "隐藏惩罚设置" : "惩罚设置"}
-          onPress={() => setShowPenaltySettings(!showPenaltySettings)}
-          variant="secondary"
-          style={styles.settingsButton}
-        />
+      {/* 数据统计信息 */}
+      <View style={styles.penaltySection}>
+        <Text style={styles.cardTitle}>数据总览</Text>
+        <Text style={styles.summaryText}>
+          本周共有 {weeklyStats.filter(item => item.penaltyAmount > 0).length} 天有扣款记录
+        </Text>
       </View>
-
-      {/* 惩罚设置组件 */}
-      {showPenaltySettings && (
-        <View style={styles.penaltySettingsSection}>
-          <PenaltySettings
-            onSettingsChange={(settings) => {
-              console.log('惩罚设置已更新:', settings);
-              // 重新加载数据以反映新设置
-              loadStats();
-            }}
-          />
-        </View>
-      )}
 
       {renderInfoCard()}
 
@@ -660,5 +617,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     padding: 20,
+  },
+
+  summaryText: {
+    color: '#ffffff',
+    fontSize: 14,
+    textAlign: 'center',
+    padding: 10,
   },
 });

@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * 性能监控工具
  * 用于监控应用性能和用户体验指标

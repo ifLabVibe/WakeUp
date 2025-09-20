@@ -15,7 +15,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 
 // 导入服务
 import { AlarmService } from './src/services/alarmService';
-import PerformanceMonitor from './src/utils/performanceMonitor';
+import { PerformanceMonitor } from './src/utils/performanceMonitor';
 
 const Stack = createStackNavigator();
 

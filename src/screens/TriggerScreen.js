@@ -13,8 +13,6 @@ import Button from '../components/Button';
 import { AlarmService } from '../services/alarmService';
 import { StorageService } from '../services/storageService';
 import { PenaltyService } from '../services/penaltyService';
-import { useShakeDetection } from '../hooks/useShakeDetection';
-import SensorSettings from '../components/SensorSettings';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,52 +27,24 @@ export default function TriggerScreen({ route, navigation }) {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [canSnooze, setCanSnooze] = useState(true);
   const [snoozeCount, setSnoozeCount] = useState(0);
+  const [shakeCount, setShakeCount] = useState(0);
+  const [isShaking, setIsShaking] = useState(false);
   const [shakeIntensity, setShakeIntensity] = useState(0);
-  const [useSensorShake, setUseSensorShake] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [customThreshold, setCustomThreshold] = useState(null);
 
   // 动画值
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 
-  // 摇晃检测配置
-  const getShakeThreshold = () => {
-    if (customThreshold !== null) return customThreshold;
-    const thresholds = { easy: 12, normal: 15, hard: 18 };
-    return thresholds[difficulty] || 15;
-  };
+  // 手动摇晃处理（简化版本）
+  const handleManualShake = () => {
+    if (isShaking) return;
 
-  // 摇晃检测Hook
-  const {
-    isShaking,
-    shakeCount,
-    shakeIntensity: currentIntensity,
-    shakePattern,
-    resetShakeCount,
-    startListening,
-    stopListening
-  } = useShakeDetection({
-    threshold: getShakeThreshold(),
-    minimumShakeCount: 1,
-    shakeInterval: 300,
-    enabled: useSensorShake && triggerType === 'shake',
-    onShake: handleSensorShake,
-    onShakeProgress: handleShakeProgress
-  });
-
-  // 传感器摇晃处理
-  const handleSensorShake = (count, intensity) => {
-    setShakeIntensity(intensity);
+    const newCount = shakeCount + 1;
+    setShakeCount(newCount);
+    setShakeIntensity(15); // 模拟强度
     triggerShakeAnimation();
-    updateProgress(count);
-  };
-
-  const handleShakeProgress = (count, intensity) => {
-    setShakeIntensity(intensity);
-    triggerShakeAnimation();
-    updateProgress(count);
+    updateProgress(newCount);
   };
 
   // 更新进度
@@ -141,7 +111,6 @@ export default function TriggerScreen({ route, navigation }) {
     return () => {
       clearInterval(timer);
       backHandler.remove();
-      stopListening(); // 清理传感器监听
     };
   }, [difficulty]);
 
@@ -174,15 +143,6 @@ export default function TriggerScreen({ route, navigation }) {
     ).start();
   };
 
-  // 手动摇晃处理（备用方案）
-  const handleManualShake = () => {
-    if (isShaking) return;
-
-    const newCount = shakeCount + 1;
-    setShakeIntensity(15); // 模拟强度
-    triggerShakeAnimation();
-    updateProgress(newCount);
-  };
 
   const handleAlarmComplete = async () => {
     try {
@@ -302,48 +262,18 @@ export default function TriggerScreen({ route, navigation }) {
           </Text>
         </View>
 
-        {/* 传感器状态和控制 */}
+        {/* 控制按钮 */}
         <View style={styles.sensorContainer}>
           <Text style={styles.sensorStatus}>
-            传感器: {useSensorShake ? '已启用' : '已禁用'}
-          </Text>
-          <Text style={styles.sensorDetails}>
-            强度: {shakeIntensity.toFixed(1)} | 模式: {shakePattern}
+            摇晃强度: {shakeIntensity.toFixed(1)}
           </Text>
 
-          <View style={styles.sensorControls}>
-            <Button
-              title={useSensorShake ? '禁用传感器' : '启用传感器'}
-              onPress={() => setUseSensorShake(!useSensorShake)}
-              variant="secondary"
-              style={styles.sensorButton}
-            />
-
-            <Button
-              title="设置"
-              onPress={() => setShowSettings(!showSettings)}
-              variant="secondary"
-              style={styles.sensorButton}
-            />
-
-            {!useSensorShake && (
-              <Button
-                title="手动摇晃"
-                onPress={handleManualShake}
-                disabled={isShaking}
-                style={styles.manualButton}
-              />
-            )}
-          </View>
-
-          {showSettings && (
-            <SensorSettings
-              threshold={getShakeThreshold()}
-              onThresholdChange={setCustomThreshold}
-              difficulty={difficulty}
-              enabled={useSensorShake}
-            />
-          )}
+          <Button
+            title="手动摇晃"
+            onPress={handleManualShake}
+            disabled={isShaking}
+            style={styles.manualButton}
+          />
         </View>
       </Animated.View>
 
@@ -357,7 +287,7 @@ export default function TriggerScreen({ route, navigation }) {
             难度: {difficulty === 'easy' ? '简单' : difficulty === 'normal' ? '普通' : '困难'}
           </Text>
           <Text style={styles.statsText}>
-            阈值: {getShakeThreshold()}
+            进度: {Math.round((shakeCount / requiredShakes) * 100)}%
           </Text>
         </View>
 
